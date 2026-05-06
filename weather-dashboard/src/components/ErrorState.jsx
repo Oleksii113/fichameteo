@@ -1,6 +1,6 @@
 import { MdOutlineWarningAmber } from "react-icons/md";
 
-function ErroState({ message, onRetry }) {
+function ErrorState({ message, onRetry }) {
     return (
         <div className="error-state" role="alert">
             <div className="state-title">
