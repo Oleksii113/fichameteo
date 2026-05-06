@@ -1,23 +1,12 @@
-/**
- * Objetivo deste snippet:
- * 1) Mostrar a versão completa desta fase do projeto.
- * 2) Preservar a ordem recomendada: imports -> helpers -> lógica -> export.
- * 3) Permitir cópia direta sem faltar peças de integração.
- *
- * Como ler este bloco:
- * - Começa nos imports (dependências).
- * - Depois valida funções auxiliares e estado.
- * - Só no fim analisa o render/retorno e o export default.
- */
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { AiOutlineLoading3Quarters, AiOutlineloading3Quarters } from "react-icons/ai";
 
-function LoadingState({ label = "A carregar dados meteorológicos..." }) {
-    return (
+function LoadingState({ label = "A carregar dads meteorologicos..."}) {
+    return(
         <div className="loading-state" role="status" aria-live="polite">
-            <div className="state-title">
+            <div className="stte-title">
                 <AiOutlineLoading3Quarters
-                    className="state-icon state-icon--spin"
-                    aria-hidden="true"
+                className="state-icon state-icon--spin"
+                aria-hidden="true"
                 />
                 <strong>{label}</strong>
             </div>
