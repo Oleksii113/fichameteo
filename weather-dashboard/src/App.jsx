@@ -1,7 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import cities from "./data/cities.js";
 import SearchCity from "./components/SearchCity.jsx";
 import CityList from "./components/CityList.jsx";
+import WeatherCard from "./components/WeatherCard.jsx";
+import ForecastList from "./components/ForecastList.jsx";
+import LoadingState from "./components/LoadingState.jsx";
+import ErrorState from "./components/ErrorState.jsx";
+import { fetchCityWeather } from "./services/weatherApi.js";
 
 function normalizeText(value) {
     return value
@@ -14,6 +19,9 @@ function normalizeText(value) {
 function App() {
     const [selectedCityId, setSelectedCityId] = useState("lisboa");
     const [query, setQuery] = useState("");
+    const [weatherByCity, setWeatherByCity] = useState({});
+    const [mainLoading, setMainLoading] = useState(false);
+    const [mainError, setMainError] = useState("");
 
     const filteredCities = useMemo(() => {
         const normalized = normalizeText(query);
@@ -26,12 +34,75 @@ function App() {
     }, [query]);
 
     const selectedCity = cities.find((city) => city.id === selectedCityId);
+    const selectedWeather = weatherByCity[selectedCityId] ?? null;
+
+    useEffect(() => {
+        let ignore = false;
+
+        async function loadSelectedCityWeather() {
+            if (!selectedCity) return;
+            setMainLoading(true);
+            setMainError("");
+
+            try {
+                const weatherData = await fetchCityWeather(selectedCity);
+                if (ignore) return;
+
+                setWeatherByCity((prev) => ({
+                    ...prev,
+                    [selectedCity.id]: weatherData,
+                }));
+            } catch (fetchError) {
+                if (!ignore) {
+                    setMainError(
+                        fetchError.message ||
+                            "Não foi possível carregar os dados desta cidade.",
+                    );
+                }
+            } finally {
+                if (!ignore) {
+                    setMainLoading(false);
+                }
+            }
+        }
+
+        loadSelectedCityWeather();
+
+        return () => {
+            ignore = true;
+        };
+    }, [selectedCityId]);
+
+    async function handleRetry() {
+        if (!selectedCity) return;
+
+        setMainLoading(true);
+        setMainError("");
+
+        try {
+            const weatherData = await fetchCityWeather(selectedCity);
+            setWeatherByCity((prev) => ({
+                ...prev,
+                [selectedCity.id]: weatherData,
+            }));
+        } catch (fetchError) {
+            setMainError(
+                fetchError.message ||
+                    "Não foi possível carregar os dados desta cidade.",
+            );
+        } finally {
+            setMainLoading(false);
+        }
+    }
 
     return (
         <div className="weather-app">
             <header className="weather-hero">
-                <h1>Wether Dashboard</h1>
-                <p>Consulta rapidamente o estado do tempo por cidade.</p>
+                <h1>Weather Dashboard</h1>
+                <p>
+                    Condições atuais e previsão semanal para cidades de
+                    Portugal.
+                </p>
             </header>
 
             <div className="weather-grid">
@@ -52,14 +123,26 @@ function App() {
                 </aside>
 
                 <section className="weather-main">
-                    <article className="panel">
-                        <h2>Cidade selecionada</h2>
-                        <p>{selectedCity?.name ?? "Sem cidade selecionada"}</p>
-                        <p>
-                            Os dados detalhados serão carregados no proximo
-                            passo.
+                    {mainLoading && (
+                        <LoadingState label="A carregar dados da cidade selecionada..." />
+                    )}
+                    {!mainLoading && mainError && (
+                        <ErrorState message={mainError} onRetry={handleRetry} />
+                    )}
+                    {!mainLoading && !mainError && selectedWeather && (
+                        <>
+                            <WeatherCard
+                                cityName={selectedWeather.city.name}
+                                current={selectedWeather.current}
+                            />
+                            <ForecastList days={selectedWeather.days} />
+                        </>
+                    )}
+                    {!mainLoading && !mainError && !selectedWeather && (
+                        <p className="empty-state">
+                            Sem dados disponíveis para esta cidade.
                         </p>
-                    </article>
+                    )}
                 </section>
             </div>
         </div>
